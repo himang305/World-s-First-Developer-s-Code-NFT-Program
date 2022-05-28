@@ -4,7 +4,7 @@
 https://unremot.com/
 
 
-Launched Developer's code NFT program on polygon network live at Unremot.com,
+Launched Developer's code NFT program on polygon network,
 
 NFT based Custom ERC 1155 Token standards,
 
