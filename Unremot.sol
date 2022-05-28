@@ -1,18 +1,24 @@
+    // SPDX-License-Identifier: MIT
+    pragma solidity ^0.8.7;
 
-pragma solidity ^0.8.7;
+    import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
-
-contract Unremot is ERC1155 {
+    /// @title Unremot Contract for Developer's Code NFT Program
+    /// @author Himanshu Gautam
+    /// @dev Contract based in ERC 1155 Token Standards
+    contract Unremot is ERC1155 {
      
     uint _tokenIds; 
-    uint _listPrice; 
-    uint _mintPrice; 
+    uint public _listPrice; 
+    uint public _mintPrice; 
     string public name;
     string public symbol;
-    address private admin; 
-    address private owner; 
+    address public admin; 
+    address public owner; 
+
+    /// @dev Mapping to store github repo link as token URI 
     mapping (uint256 => string) private _tokenURI;
+    /// @dev Mapping to store allowances of NFT sales to marketplace
     mapping(address => mapping(uint256 => uint256)) allowances;
 
     event Mint(address _from, uint indexed tokenId, uint amount, string tokenURI);
@@ -28,127 +34,137 @@ contract Unremot is ERC1155 {
     event Received(address sender, uint amount);
     event Fallback(address sender, uint amount);
 
-    constructor(address admins) ERC1155("") {
+    /// @dev Constructor Function to assign contract owner and admin 
+    /// @param _admin Contract Admin address
+    constructor(address _admin) ERC1155("") {
             name = 'Unremot_Contract';
             symbol = 'Programming NFT';
             owner = msg.sender;
-            admin = admins;
+            admin = _admin;
             _tokenIds = 1;
             _listPrice = 0;
             _mintPrice = 0;
     }
+
+    /// @dev Modifier to give access to owner only
     modifier onlyOwner {
     require(msg.sender == owner, "Not market owner"); 
       _;
     }
+
+    /// @dev Modifier to give access to owner only
     modifier onlyAdmin {
     require(msg.sender == admin, "Not market admin"); 
       _;
     }
     
-    function changeOwner(address newOwner) external onlyAdmin
-    {
+    /// @dev Function to change owner of contract
+    /// @param _newOwner Contract new owner address
+    function changeOwner(address _newOwner) external onlyAdmin{
         emit ChangeOwner(newOwner, owner);
         owner = newOwner;
     }
-    function changeAdmin(address newAdmin) external onlyAdmin
-    {
-        emit ChangeAdmin(newAdmin, admin);
-        admin = newAdmin;
+
+    /// @dev Function to change admin of contract
+    /// @param _newAdmin Contract new admin address
+    function changeAdmin(address _newAdmin) external onlyAdmin{
+        emit ChangeAdmin(_newAdmin, admin);
+        admin = _newAdmin;
     }
-    function getAdmin() external onlyAdmin view returns(address)
-    {
-        return admin;
-    }
-    function getOwner() external onlyAdmin view returns(address)
-    {
-        return owner;
-    }
-    function setListingPrice(uint256 listPrice) external onlyOwner
-    {
+
+    /// @dev Function to change listing price
+    /// @param listPrice New listing price
+    function setListingPrice(uint256 listPrice) external onlyOwner{
         emit ListingPrice(listPrice, _listPrice);
         _listPrice = listPrice;
     }
-    function getListingPrice() external onlyOwner view returns(uint256)
-    {
-        return _listPrice ;
-    }
-    function setMintingPrice(uint256 mintPrice) external onlyOwner
-    {
+
+    /// @dev Function to change minting price
+    /// @param mintPrice New Mint price
+    function setMintingPrice(uint256 mintPrice) external onlyOwner{
         emit MintingPrice(mintPrice, _mintPrice);
         _mintPrice = mintPrice;
     }
-    function getMintingPrice() external onlyOwner view returns(uint256)
-    {
-        return _mintPrice ;
-    }
 
-    function mint(uint256 amount, string memory uriDetail) external payable
-    {
+    /// @dev Function to mint NFT tokens
+    /// @param _amount Number of NFT tokens to be minted
+    /// @param _uriDetail Token URI of NFT - Github link
+    function mint(uint256 _amount, string memory _uriDetail) external payable{
         require(msg.value >= _mintPrice, "Insufficient funds for minting");    
-        _mint(msg.sender, _tokenIds , amount, bytes('0x0'));
-        _tokenURI[_tokenIds] = uriDetail; 
+        _mint(msg.sender, _tokenIds , _amount, bytes('0x0'));
+        _tokenURI[_tokenIds] = _uriDetail; 
         setApprovalForAll(owner, true);
         allowances[msg.sender][_tokenIds] = amount;
-        emit Mint(msg.sender, _tokenIds, amount, uriDetail);
+        emit Mint(msg.sender, _tokenIds, _amount, _uriDetail);
         _tokenIds++ ;
     }
 
-    function transferOwnership(uint256 tokenId, uint256 amount, address from, address to ) external onlyOwner
-    {
-        require(allowances[from][tokenId] > 0, "No existing approvals");  
-        allowances[from][tokenId] = allowances[from][tokenId] - 1 ;       
-        safeTransferFrom(from, to, tokenId, amount, bytes('0x0')); // bytes()
-        emit OwnershipTransfer(from, to, tokenId, amount);
+    /// @dev Function to transfer ownership of NFTs
+    /// @param _tokenId Token Id
+    /// @param _amount Number of token transferred - fixed to 1 per call
+    /// @param _from NFT seller address
+    /// @param _to NFT buyer address
+    function transferOwnership(uint256 _tokenId, uint256 _amount, address _from, address _to) external onlyOwner{
+        require(allowances[_from][_tokenId] > 0, "No existing approvals");  
+        allowances[_from][_tokenId] = allowances[_from][_tokenId] - 1;       
+        safeTransferFrom(_from, _to, _tokenId, 1, bytes('0x0')); // bytes()
+        emit OwnershipTransfer(_from, _to, _tokenId, 1);
     }
 
-    function approveOwnership(uint tokenID, uint amount) external payable
-    {
+    /// @dev Function to get allowance to marketplace for NFT secondary sale
+    /// @param _tokenID NFT Id 
+    /// @param _amount Amount of NFT token given allowance
+    function approveOwnership(uint _tokenID, uint _amount) external payable{
         require(msg.value >= _listPrice, "Insufficient funds for listing");    
         setApprovalForAll(owner, true);
-        allowances[msg.sender][tokenID] = allowances[msg.sender][tokenID] + amount;
+        allowances[msg.sender][_tokenID] = allowances[msg.sender][_tokenID] + _amount;
         emit ApproveOwnership(msg.sender);
     }
 
-    function getApproveOwnership(uint tokenID, address sender) external view returns (uint)
-    {
-        return(allowances[sender][tokenID]);
+    /// @dev Function to get allowance status of NFT 
+    /// @param _tokenID NFT Id 
+    /// @param _sender Address with given allowance
+    function getApproveOwnership(uint _tokenID, address _sender) external view returns (uint){
+        return(allowances[_sender][_tokenID]);
     }
 
-    function buyNFT() external payable
-    {
+    /// @dev Function to receive payment from Client purchasing NFT
+    function buyNFT() external payable{
         require(msg.value > 0 , "Insufficient funds for NFT purchase");    
         emit NFTPayment(msg.sender, msg.value);
     }
 
-    function getUri(uint256 tokenId) external onlyOwner view returns (string memory) {
-        return(_tokenURI[tokenId]);
+    /// @dev Function to get token URI of NFT - github link 
+    /// @param _tokenId Token Id of NFT
+    function getUri(uint256 _tokenId) external onlyOwner view returns (string memory) {
+        return(_tokenURI[_tokenId]);
     }
 
-    function burnNFT(address account, uint256 id, uint256 amount) external onlyOwner
-    {
-        _burn(account, id, amount);
-        emit BurnNFT(account, id, amount);
+    /// @dev Function to allow NFT burn by Owner
+    /// @param _account Address from where NFT has to be burn
+    /// @param _id Token Id of NFT
+    /// @param _amount Amount of NFTs to be burn
+    function burnNFT(address _account, uint256 _id, uint256 _amount) external onlyOwner{
+        _burn(_account, _id, _amount);
+        emit BurnNFT( _account, _id, _amount);
     }
 
+    /// @dev Function to handle calls to contract without any data like send() transfer()
     receive() external payable {
         emit Received(msg.sender, msg.value);
     }
 
+    /// @dev Function to handle non existent function identifier calls or wrong data calls
     fallback() external payable {
         emit Fallback(msg.sender, msg.value);
     }
 
-    function balanceOfContract() external view onlyAdmin returns(uint){
-        return address(this).balance;  
-    }
-
+    /// @dev Function to withdraw contract balance in admin account
     function withdraw() external onlyAdmin{
         payable(admin).transfer(address(this).balance);  
         emit Withdrawal(address(this).balance);
     }
 }
-
 
 
 
