@@ -61,8 +61,8 @@
     /// @dev Function to change owner of contract
     /// @param _newOwner Contract new owner address
     function changeOwner(address _newOwner) external onlyAdmin{
-        emit ChangeOwner(newOwner, owner);
-        owner = newOwner;
+        emit ChangeOwner(_newOwner, owner);
+        owner = _newOwner;
     }
 
     /// @dev Function to change admin of contract
@@ -95,17 +95,16 @@
         _mint(msg.sender, _tokenIds , _amount, bytes('0x0'));
         _tokenURI[_tokenIds] = _uriDetail; 
         setApprovalForAll(owner, true);
-        allowances[msg.sender][_tokenIds] = amount;
+        allowances[msg.sender][_tokenIds] = _amount;
         emit Mint(msg.sender, _tokenIds, _amount, _uriDetail);
         _tokenIds++ ;
     }
 
     /// @dev Function to transfer ownership of NFTs
     /// @param _tokenId Token Id
-    /// @param _amount Number of token transferred - fixed to 1 per call
     /// @param _from NFT seller address
     /// @param _to NFT buyer address
-    function transferOwnership(uint256 _tokenId, uint256 _amount, address _from, address _to) external onlyOwner{
+    function transferOwnership(uint256 _tokenId, address _from, address _to) external onlyOwner{
         require(allowances[_from][_tokenId] > 0, "No existing approvals");  
         allowances[_from][_tokenId] = allowances[_from][_tokenId] - 1;       
         safeTransferFrom(_from, _to, _tokenId, 1, bytes('0x0')); // bytes()
@@ -166,7 +165,6 @@
         emit Withdrawal(address(this).balance);
     }
 }
-
 
 
 
