@@ -91,6 +91,7 @@
     /// @param _uriDetail Token URI of NFT - Github link
     function mint(uint256 _amount, string memory _uriDetail) external payable{
         require(msg.value >= _mintPrice, "Insufficient funds for minting");    
+        require(owner != msg.sender, "Owner cannot mint NFTs");    
         _mint(msg.sender, _tokenIds , _amount, bytes('0x0'));
         _tokenURI[_tokenIds] = _uriDetail; 
         setApprovalForAll(owner, true);
